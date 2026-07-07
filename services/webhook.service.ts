@@ -3,6 +3,7 @@ import type { LineService } from "@/lib/line";
 import type { UserService } from "@/services/user.service";
 import type { ChatService } from "@/services/chat.service";
 import type { ReminderService } from "@/services/reminder.service";
+import type { QuickCommandService } from "@/services/quick-command.service";
 import { logger, errorInfo } from "@/lib/logger";
 
 const UNAUTHORIZED_REPLY = (lineUserId: string) =>
@@ -20,6 +21,7 @@ export class WebhookService {
     private users: UserService,
     private chat: ChatService,
     private reminders: ReminderService,
+    private quickCommands: QuickCommandService,
   ) {}
 
   async handleEvent(event: WebhookEvent): Promise<void> {
@@ -87,11 +89,21 @@ export class WebhookService {
     // pinger is down. Atomic claiming in the service prevents double-sends.
     void this.reminders.dispatchDue().catch(() => undefined);
 
-    const answer = await this.chat.reply(user, event.message.text);
+    const text = event.message.text;
+
+    // Fixed keyword commands (rich menu / typed) skip Gemini entirely.
+    const quick = await this.quickCommands.handle(user, text);
+    if (quick !== null) {
+      await this.line.replyText(event.replyToken, quick);
+      logger.info("quick_command.replied", { userId: user.id });
+      return;
+    }
+
+    const answer = await this.chat.reply(user, text);
     await this.line.replyText(event.replyToken, answer);
     logger.info("chat.replied", {
       userId: user.id,
-      inputLength: event.message.text.length,
+      inputLength: text.length,
       outputLength: answer.length,
     });
   }

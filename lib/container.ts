@@ -9,6 +9,7 @@ import { ReminderRepository } from "@/repositories/reminder.repository";
 import { CalendarEventRepository } from "@/repositories/calendar-event.repository";
 import { NewsPreferenceRepository } from "@/repositories/news-preference.repository";
 import { SettingsRepository } from "@/repositories/settings.repository";
+import { UserSettingsRepository } from "@/repositories/user-settings.repository";
 import { GeminiService } from "@/services/gemini.service";
 import { EmbeddingService } from "@/services/embedding.service";
 import { MemoryService } from "@/services/memory.service";
@@ -16,6 +17,9 @@ import { TodoService } from "@/services/todo.service";
 import { ReminderService } from "@/services/reminder.service";
 import { CalendarService } from "@/services/calendar.service";
 import { NewsService } from "@/services/news.service";
+import { WeatherService } from "@/services/weather.service";
+import { SettingsService } from "@/services/settings.service";
+import { QuickCommandService } from "@/services/quick-command.service";
 import { BriefService } from "@/services/brief.service";
 import { UserService } from "@/services/user.service";
 import { ChatService } from "@/services/chat.service";
@@ -57,6 +61,7 @@ export function getContainer(): Container {
   const calendarEventRepo = new CalendarEventRepository(prisma);
   const newsPrefRepo = new NewsPreferenceRepository(prisma);
   const settingsRepo = new SettingsRepository(prisma);
+  const userSettingsRepo = new UserSettingsRepository(prisma);
 
   // Services
   const gemini = new GeminiService(config.gemini.apiKey, config.gemini.model);
@@ -71,6 +76,8 @@ export function getContainer(): Container {
     config.line.channelSecret,
   );
   const newsService = new NewsService();
+  const weatherService = new WeatherService(config.weather);
+  const settingsService = new SettingsService(userSettingsRepo);
 
   const toolServices: ToolServices = {
     memory: memoryService,
@@ -80,6 +87,15 @@ export function getContainer(): Container {
     news: newsService,
     newsPrefs: newsPrefRepo,
   };
+
+  const quickCommandService = new QuickCommandService(
+    todoService,
+    reminderService,
+    memoryService,
+    calendarService,
+    newsPrefRepo,
+    settingsService,
+  );
 
   const userService = new UserService(userRepo, line, config.auth);
   const chatService = new ChatService(
@@ -93,6 +109,7 @@ export function getContainer(): Container {
     userService,
     chatService,
     reminderService,
+    quickCommandService,
   );
   const briefService = new BriefService(
     userRepo,
@@ -101,6 +118,8 @@ export function getContainer(): Container {
     newsPrefRepo,
     newsService,
     calendarService,
+    weatherService,
+    settingsService,
     line,
   );
 

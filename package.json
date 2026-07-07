@@ -13,7 +13,10 @@
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "line:richmenu:create": "tsx scripts/richmenu.ts create",
+    "line:richmenu:delete": "tsx scripts/richmenu.ts delete",
+    "line:richmenu:link": "tsx scripts/richmenu.ts link"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -25,6 +28,7 @@
     "next": "^15.5.20",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "sharp": "^0.34.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {

@@ -14,6 +14,10 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().default(""),
   GOOGLE_CLIENT_SECRET: z.string().default(""),
   GOOGLE_REDIRECT_URI: z.string().default(""),
+  // Weather location for the daily brief — defaults to Sukhothai.
+  WEATHER_LATITUDE: z.coerce.number().default(17.0078),
+  WEATHER_LONGITUDE: z.coerce.number().default(99.8237),
+  WEATHER_LOCATION_NAME: z.string().default("สุโขทัย"),
 });
 
 export interface AppConfig {
@@ -37,6 +41,12 @@ export interface AppConfig {
     clientId: string;
     clientSecret: string;
     redirectUri: string;
+  };
+  /** Location used for the daily brief weather section. */
+  weather: {
+    latitude: number;
+    longitude: number;
+    locationName: string;
   };
 }
 
@@ -76,6 +86,11 @@ export function getConfig(): AppConfig {
       clientId: env.GOOGLE_CLIENT_ID.trim(),
       clientSecret: env.GOOGLE_CLIENT_SECRET.trim(),
       redirectUri: env.GOOGLE_REDIRECT_URI.trim(),
+    },
+    weather: {
+      latitude: env.WEATHER_LATITUDE,
+      longitude: env.WEATHER_LONGITUDE,
+      locationName: env.WEATHER_LOCATION_NAME.trim(),
     },
   };
   return cached;

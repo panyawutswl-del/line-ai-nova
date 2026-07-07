@@ -75,8 +75,26 @@ model User {
   calendarEvents  CalendarEvent[]
   settings        Setting[]
   newsPreferences NewsPreference[]
+  userSettings    UserSettings?
 
   @@map("users")
+}
+
+model UserSettings {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  morningBriefEnabled Boolean  @default(true) @map("morning_brief_enabled")
+  eveningBriefEnabled Boolean  @default(true) @map("evening_brief_enabled")
+  newsEnabled         Boolean  @default(true) @map("news_enabled")
+  weatherEnabled      Boolean  @default(true) @map("weather_enabled")
+  timezone            String   @default("Asia/Bangkok")
+  language            String   @default("th")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }
 
 model Conversation {

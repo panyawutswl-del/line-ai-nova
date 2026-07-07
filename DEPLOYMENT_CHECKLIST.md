@@ -37,8 +37,8 @@
   npx prisma migrate deploy
   ```
 
-  ผลที่ถูกต้อง: applied 2 migrations — `20260707000000_init` และ `20260707130000_phase2_memory_vector` ✅
-  (migration ที่สองเปิด pgvector extension สำหรับ semantic memory search — Supabase มีให้ในตัว)
+  ผลที่ถูกต้อง: applied 3 migrations — `20260707000000_init`, `20260707130000_phase2_memory_vector`, `20260707160000_phase3_user_settings` ✅
+  (migration ที่สองเปิด pgvector extension สำหรับ semantic memory search — Supabase มีให้ในตัว · ตัวที่สามเพิ่มตาราง `user_settings`)
 
 - [ ] ตรวจสอบ: เปิด Supabase → **Table Editor** → ต้องเห็น 8 ตาราง
   (`users, conversations, memories, todos, reminders, calendar_events, settings, news_preferences`)
@@ -72,6 +72,7 @@
   | `OWNER_LINE_USER_ID` | เว้นว่างไว้ก่อนก็ได้ (เติมใน Step 6) |
   | `CRON_SECRET` | สุ่มจาก `openssl rand -hex 24` (กัน cron endpoint โดนยิงเล่น) |
   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | (optional) ดู [docs/google-calendar-oauth.md](docs/google-calendar-oauth.md) |
+  | `WEATHER_LATITUDE` / `WEATHER_LONGITUDE` / `WEATHER_LOCATION_NAME` | (optional) default = สุโขทัย · ใช้ในสรุปเช้า |
 
 - [ ] กด **Deploy** → รอ build ผ่าน → ได้ URL เช่น `https://nova-xxx.vercel.app`
 - [ ] ทดสอบ: เปิด `https://<app>.vercel.app/api/webhook/line` ในเบราว์เซอร์ → ต้องเห็น `{"service":"nova-line-webhook","status":"ok"}`
@@ -95,9 +96,12 @@
 - [ ] Vercel → Settings → Environment Variables → ใส่ ID ลงใน `OWNER_LINE_USER_ID` → **Redeploy**
 - [ ] ทักอีกครั้ง → ระบบ activate อัตโนมัติ → Nova ตอบด้วย Gemini ✅
 
-## Step 7 — Scheduler (Phase 2)
+## Step 7 — Scheduler
 
-**Daily Brief 07:00** — ทำงานอัตโนมัติ (Vercel Cron ตั้งไว้ใน `vercel.json` แล้ว) แค่เช็คว่า `CRON_SECRET` ตั้งบน Vercel แล้ว
+**Morning Brief 07:00 + Evening Wrap-up 20:00** — ทำงานอัตโนมัติ (Vercel Cron ตั้งไว้ใน `vercel.json` แล้ว) แค่เช็คว่า `CRON_SECRET` ตั้งบน Vercel แล้ว
+
+- [ ] ทดสอบ morning: `curl -H "Authorization: Bearer <CRON_SECRET>" https://<app>.vercel.app/api/cron/morning-brief` → `{"ok":true,"sent":...}`
+- [ ] ทดสอบ evening: `curl -H "Authorization: Bearer <CRON_SECRET>" https://<app>.vercel.app/api/cron/evening-wrapup`
 
 **Reminder dispatcher** — Vercel Hobby จำกัด cron ให้รันได้แค่วันละครั้ง จึงต้องใช้ตัว ping ภายนอก (ฟรี):
 
@@ -110,7 +114,16 @@
 
 > ใช้ Vercel Pro? ข้าม cron-job.org แล้วเพิ่มใน `vercel.json`: `{"path": "/api/cron/reminders", "schedule": "*/5 * * * *"}`
 
-## Step 8 — Google Calendar (optional)
+## Step 8 — Rich Menu (Phase 3)
+
+รันจากเครื่อง (ครั้งเดียว, ต้องมี `LINE_CHANNEL_ACCESS_TOKEN` ใน `.env`):
+
+- [ ] `npm run line:richmenu:create` → เห็น `✓ Rich menu ready: richmenu-xxx`
+- [ ] เปิดห้องแชท Nova ใน LINE → เห็นเมนู 6 ปุ่มด้านล่าง
+- [ ] กดปุ่มใดปุ่มหนึ่ง → Nova ตอบ Quick Command ทันที
+- ลบ/รีเซ็ต: `npm run line:richmenu:delete` แล้ว `create` ใหม่ · ดู [docs/rich-menu.md](docs/rich-menu.md)
+
+## Step 9 — Google Calendar (optional)
 
 - [ ] ทำตาม [docs/google-calendar-oauth.md](docs/google-calendar-oauth.md) → ตั้ง 3 env → Redeploy
 - [ ] พิมพ์ "นัดประชุมพรุ่งนี้ 10 โมง" → Nova ส่งลิงก์เชื่อมต่อ → กด Allow → สั่งใหม่อีกครั้ง
@@ -121,8 +134,10 @@
 - [ ] "จำว่าฉันชอบกาแฟดำ" → แล้วถาม "ผมชอบอะไร" → ตอบถูก (memory + semantic search)
 - [ ] "เพิ่มงาน ทดสอบระบบ วันนี้" → "งานของผมวันนี้" → เห็นงาน → "ทำเสร็จแล้ว ทดสอบระบบ"
 - [ ] "เตือนฉันอีก 5 นาทีให้ดื่มน้ำ" → รอ LINE push (ต้องตั้ง Step 7 ก่อน)
-- [ ] "ติดตามข่าว AI" → พรุ่งนี้ 07:00 ได้ Daily Brief พร้อมข่าว
-- [ ] Supabase Table Editor → ตาราง `conversations`, `memories`, `todos`, `reminders` มีข้อมูล
+- [ ] พิมพ์ `settings` → เห็นแผงตั้งค่า → `ปิดข่าว` → `settings` อีกครั้ง → ข่าวเป็น ปิด
+- [ ] พิมพ์ `todo` / `reminder` / `memory` → ตอบ Quick Command ทันที (ไม่หน่วง)
+- [ ] ทดสอบ morning + evening cron ด้วย curl (Step 7) → ได้ LINE push
+- [ ] Supabase Table Editor → ตาราง `conversations`, `memories`, `todos`, `reminders`, `user_settings` มีข้อมูล
 - [ ] Supabase → ตาราง `users` → ตัวเองมี `is_active = true`, `role = OWNER`
 - [ ] ลองให้คนอื่น (ไม่อยู่ใน whitelist) ทัก → ถูกปฏิเสธ
 - [ ] Vercel → Logs → ไม่มี error สีแดง
