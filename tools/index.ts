@@ -2,9 +2,20 @@ import type { FunctionDeclaration } from "@google/genai";
 import type { NovaTool, ToolContext } from "@/types";
 import { logger, errorInfo } from "@/lib/logger";
 import { getCurrentDatetimeTool } from "@/tools/get-current-datetime";
+import { memoryTools } from "@/tools/memory";
+import { todoTools } from "@/tools/todo";
+import { reminderTools } from "@/tools/reminder";
+import { calendarTools } from "@/tools/calendar";
+import { newsTools } from "@/tools/news";
 
-// Phase 2+: register saveMemory, createTodo, createReminder, ... here.
-const tools: NovaTool[] = [getCurrentDatetimeTool];
+const tools: NovaTool[] = [
+  getCurrentDatetimeTool,
+  ...memoryTools,
+  ...todoTools,
+  ...reminderTools,
+  ...calendarTools,
+  ...newsTools,
+];
 
 const registry = new Map<string, NovaTool>(
   tools.map((t) => [t.declaration.name!, t]),

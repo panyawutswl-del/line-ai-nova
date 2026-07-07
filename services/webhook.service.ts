@@ -2,6 +2,7 @@ import type { WebhookEvent } from "@line/bot-sdk";
 import type { LineService } from "@/lib/line";
 import type { UserService } from "@/services/user.service";
 import type { ChatService } from "@/services/chat.service";
+import type { ReminderService } from "@/services/reminder.service";
 import { logger, errorInfo } from "@/lib/logger";
 
 const UNAUTHORIZED_REPLY = (lineUserId: string) =>
@@ -18,6 +19,7 @@ export class WebhookService {
     private line: LineService,
     private users: UserService,
     private chat: ChatService,
+    private reminders: ReminderService,
   ) {}
 
   async handleEvent(event: WebhookEvent): Promise<void> {
@@ -81,6 +83,9 @@ export class WebhookService {
     }
 
     void this.users.touchLastLogin(user).catch(() => undefined);
+    // Opportunistic fallback: deliver any due reminders even if the cron
+    // pinger is down. Atomic claiming in the service prevents double-sends.
+    void this.reminders.dispatchDue().catch(() => undefined);
 
     const answer = await this.chat.reply(user, event.message.text);
     await this.line.replyText(event.replyToken, answer);

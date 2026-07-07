@@ -23,10 +23,18 @@
 ## Phase status
 
 - ✅ Phase 1 — webhook, AI chat, user management, whitelist auth
-- ⬜ Phase 2 — Memory (PIN/AUTO), To-do, Reminder (LINE push + Vercel Cron)
-- ⬜ Phase 3 — Google Calendar OAuth, Morning Brief 07:00, Evening Wrap-up 20:00
-- ⬜ Phase 4 — News, Content Creator, File Vault
+- ✅ Phase 2 — Memory (pgvector semantic search + PIN/AUTO), To-do, Reminder (LINE push), Google Calendar OAuth, News (Google News RSS), Daily Brief 07:00
+- ⬜ Phase 3 — Evening Wrap-up 20:00, Rich Menu
+- ⬜ Phase 4 — Content Creator, File Vault, Admin Dashboard
 - **ห้ามข้าม phase — ทำทีละ phase แล้วรอ approval**
+
+## Phase 2 implementation notes
+
+- Semantic search: `gemini-embedding-001` @ 768 dims → pgvector `memories.embedding` (Unsupported type ใน Prisma, query ผ่าน $queryRawUnsafe) — embedding fail = fallback keyword search เสมอ
+- Thai NL dates: ไม่มี parser — Gemini แปลงเป็น ISO+07:00 เอง (เวลาปัจจุบันอยู่ใน system prompt, format กำหนดใน tool description)
+- Reminder dispatch: claim แบบ atomic (updateMany WHERE status=PENDING) กัน double-send · Vercel Hobby cron รายวันเท่านั้น → `/api/cron/reminders` ต้องใช้ external pinger + มี fallback เช็คตอนมีข้อความเข้า
+- Google OAuth: token เก็บใน settings table key `google_oauth` · state = lineUserId + HMAC(channelSecret)
+- Cron endpoints ป้องกันด้วย `CRON_SECRET` (Bearer header)
 
 ## Auth model (Phase 1)
 

@@ -10,6 +10,10 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   OWNER_LINE_USER_ID: z.string().default(""),
   WHITELIST_LINE_USER_IDS: z.string().default(""),
+  CRON_SECRET: z.string().default(""),
+  GOOGLE_CLIENT_ID: z.string().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().default(""),
+  GOOGLE_REDIRECT_URI: z.string().default(""),
 });
 
 export interface AppConfig {
@@ -25,6 +29,14 @@ export interface AppConfig {
     ownerLineUserId: string;
     /** All whitelisted LINE user IDs, including the owner. */
     whitelist: string[];
+  };
+  /** Empty string when cron endpoints are unprotected (dev only). */
+  cronSecret: string;
+  /** All empty when Google Calendar integration is not configured. */
+  google: {
+    clientId: string;
+    clientSecret: string;
+    redirectUri: string;
   };
 }
 
@@ -58,6 +70,12 @@ export function getConfig(): AppConfig {
     auth: {
       ownerLineUserId: env.OWNER_LINE_USER_ID.trim(),
       whitelist,
+    },
+    cronSecret: env.CRON_SECRET.trim(),
+    google: {
+      clientId: env.GOOGLE_CLIENT_ID.trim(),
+      clientSecret: env.GOOGLE_CLIENT_SECRET.trim(),
+      redirectUri: env.GOOGLE_REDIRECT_URI.trim(),
     },
   };
   return cached;

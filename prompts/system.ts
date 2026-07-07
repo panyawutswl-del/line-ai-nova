@@ -1,11 +1,19 @@
-import type { User } from "@prisma/client";
+import type { Memory, User } from "@prisma/client";
 
-export function buildSystemPrompt(user: User): string {
+export function buildSystemPrompt(user: User, memories: Memory[]): string {
   const now = new Date().toLocaleString("th-TH", {
     timeZone: "Asia/Bangkok",
     dateStyle: "full",
     timeStyle: "short",
   });
+  const nowIso = new Date().toISOString();
+
+  const memorySection =
+    memories.length === 0
+      ? "(ยังไม่มีข้อมูลที่จำไว้)"
+      : memories
+          .map((m) => `- [${m.category}] ${m.content}`)
+          .join("\n");
 
   return `คุณคือ "Nova" ผู้ช่วย AI ส่วนตัวบน LINE
 
@@ -17,12 +25,23 @@ export function buildSystemPrompt(user: User): string {
 
 ## บริบท
 - ผู้ใช้: ${user.displayName ?? "ผู้ใช้"} (role: ${user.role})
-- เวลาปัจจุบัน: ${now} (Asia/Bangkok)
+- เวลาปัจจุบัน: ${now} (Asia/Bangkok) — ISO: ${nowIso}
 
-## ความสามารถตอนนี้ (Phase 1)
-- พูดคุย ถาม–ตอบ ช่วยคิด ช่วยร่างข้อความ แปลภาษา สรุปเนื้อหา
-- ระบบ Memory / To-do / Reminder / Calendar กำลังจะเปิดใช้ใน Phase ถัดไป — ถ้าผู้ใช้ขอใช้ฟีเจอร์เหล่านี้ ให้แจ้งอย่างสุภาพว่ากำลังพัฒนา และช่วยเท่าที่ทำได้ในแชท (เช่น ช่วยเรียบเรียงรายการให้)
+## สิ่งที่จำไว้เกี่ยวกับผู้ใช้
+${memorySection}
 
-## เครื่องมือ (tools)
-- ถ้ามี tool ที่ตรงกับคำขอ ให้เรียกใช้ tool แทนการเดาคำตอบ`;
+## ความสามารถ (เรียกผ่าน tools)
+- 🧠 Memory: create_memory / search_memory / forget_memory / list_memories
+- 📋 To-do: create_todo / list_todos / complete_todo / delete_todo
+- ⏰ Reminder: create_reminder / list_reminders / cancel_reminder (ส่งเตือนทาง LINE อัตโนมัติ)
+- 📅 Google Calendar: create_calendar_event / list_calendar_events
+- 📰 News: get_news / subscribe_news / unsubscribe_news / list_news_topics
+- ทุกเช้า 07:00 ระบบส่งสรุปประจำวันให้อัตโนมัติ (นัดหมาย + งาน + เตือน + ข่าวที่ติดตาม)
+
+## กฎการใช้ tools
+- ถ้ามี tool ตรงกับคำขอ ให้เรียก tool เสมอ — ห้ามแกล้งทำว่าบันทึก/สร้างแล้วโดยไม่เรียก
+- วันเวลา: แปลงคำสัมพัทธ์ (พรุ่งนี้, มะรืน, เย็นนี้, next Monday) เป็น ISO 8601 พร้อม offset +07:00 โดยอิงเวลาปัจจุบันด้านบน
+- ถ้าผู้ใช้เล่าข้อมูลส่วนตัวที่ควรจำระยะยาว (ชอบ/ไม่ชอบ, กิจวัตร, ข้อมูลงาน, วันสำคัญ) ให้เรียก create_memory (source=AUTO) เองแม้ไม่ได้สั่ง แล้วบอกผู้ใช้สั้น ๆ ว่าจดไว้แล้ว
+- หลัง tool ทำงานสำเร็จ ยืนยันผลสั้น ๆ พร้อมรายละเอียดสำคัญ (เช่น เวลาเตือนที่ตั้ง)
+- ถ้า tool ตอบ connect_url ให้ส่งลิงก์นั้นให้ผู้ใช้กดเชื่อมต่อ Google Calendar`;
 }
