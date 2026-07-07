@@ -13,6 +13,15 @@ export function bangkokDayRange(offsetDays = 0): { start: Date; end: Date } {
   return { start, end };
 }
 
+/** Start/end of the Bangkok calendar day that contains the given instant. */
+export function bangkokDayBounds(d: Date): { start: Date; end: Date } {
+  const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(d);
+  const start = new Date(`${ymd}T00:00:00+07:00`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
+
 export function formatThaiDate(d: Date): string {
   return d.toLocaleDateString("th-TH", { timeZone: TZ, dateStyle: "full" });
 }

@@ -28,11 +28,23 @@ export interface CalendarEventInput {
 }
 
 export interface CalendarEventView {
+  /** Google event id — used for update/delete and mirrored as googleEventId. */
+  id: string;
   title: string;
   start: string;
   end: string;
+  allDay: boolean;
   location?: string;
   htmlLink?: string;
+}
+
+export interface CalendarEventPatch {
+  title?: string;
+  description?: string;
+  location?: string;
+  start?: Date;
+  end?: Date;
+  allDay?: boolean;
 }
 
 /**
@@ -163,9 +175,11 @@ export class CalendarService {
     });
 
     return {
+      id: event.id,
       title: input.title,
       start: input.start.toISOString(),
       end: input.end.toISOString(),
+      allDay: input.allDay ?? false,
       location: input.location,
       htmlLink: event.htmlLink,
     };
@@ -193,6 +207,7 @@ export class CalendarService {
     }
     const data = (await res.json()) as {
       items?: Array<{
+        id: string;
         summary?: string;
         location?: string;
         htmlLink?: string;
@@ -201,12 +216,99 @@ export class CalendarService {
       }>;
     };
     return (data.items ?? []).map((item) => ({
+      id: item.id,
       title: item.summary ?? "(ไม่มีชื่อ)",
       start: item.start?.dateTime ?? item.start?.date ?? "",
       end: item.end?.dateTime ?? item.end?.date ?? "",
+      allDay: !item.start?.dateTime,
       location: item.location,
       htmlLink: item.htmlLink,
     }));
+  }
+
+  /**
+   * Patch an existing event by its Google id, then mirror the change locally.
+   * Only the fields present in `patch` are sent to Google.
+   */
+  async updateEvent(
+    userId: string,
+    googleEventId: string,
+    patch: CalendarEventPatch,
+  ): Promise<CalendarEventView> {
+    const token = await this.accessToken(userId);
+    const body: Record<string, unknown> = {};
+    if (patch.title !== undefined) body.summary = patch.title;
+    if (patch.description !== undefined) body.description = patch.description;
+    if (patch.location !== undefined) body.location = patch.location;
+    if (patch.start) {
+      body.start = patch.allDay
+        ? { date: toDateOnly(patch.start) }
+        : { dateTime: patch.start.toISOString(), timeZone: "Asia/Bangkok" };
+    }
+    if (patch.end) {
+      body.end = patch.allDay
+        ? { date: toDateOnly(patch.end) }
+        : { dateTime: patch.end.toISOString(), timeZone: "Asia/Bangkok" };
+    }
+
+    const res = await fetch(this.eventUrl(googleEventId), {
+      method: "PATCH",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      throw new Error(`Calendar API ${res.status}: ${await res.text()}`);
+    }
+    const event = (await res.json()) as {
+      id: string;
+      summary?: string;
+      location?: string;
+      htmlLink?: string;
+      start?: { dateTime?: string; date?: string };
+      end?: { dateTime?: string; date?: string };
+    };
+
+    await this.events.updateByGoogleEventId(userId, googleEventId, {
+      ...(patch.title !== undefined ? { title: patch.title } : {}),
+      ...(patch.description !== undefined ? { description: patch.description } : {}),
+      ...(patch.location !== undefined ? { location: patch.location } : {}),
+      ...(patch.start ? { startTime: patch.start } : {}),
+      ...(patch.end ? { endTime: patch.end } : {}),
+      ...(patch.allDay !== undefined ? { allDay: patch.allDay } : {}),
+    });
+
+    return {
+      id: event.id,
+      title: event.summary ?? patch.title ?? "(ไม่มีชื่อ)",
+      start: event.start?.dateTime ?? event.start?.date ?? "",
+      end: event.end?.dateTime ?? event.end?.date ?? "",
+      allDay: !event.start?.dateTime,
+      location: event.location,
+      htmlLink: event.htmlLink,
+    };
+  }
+
+  /** Delete an event by its Google id, then remove the local mirror. */
+  async deleteEvent(userId: string, googleEventId: string): Promise<void> {
+    const token = await this.accessToken(userId);
+    const res = await fetch(this.eventUrl(googleEventId), {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    // 410 Gone = already deleted on Google; treat as success.
+    if (!res.ok && res.status !== 410) {
+      throw new Error(`Calendar API ${res.status}: ${await res.text()}`);
+    }
+    await this.events.deleteByGoogleEventId(userId, googleEventId);
+  }
+
+  private eventUrl(googleEventId: string): string {
+    return `${EVENTS_URL}/${encodeURIComponent(googleEventId)}`;
   }
 
   private async accessToken(userId: string): Promise<string> {
