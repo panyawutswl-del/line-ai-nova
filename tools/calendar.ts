@@ -1,6 +1,7 @@
 import { Type } from "@google/genai";
 import type { NovaTool } from "@/types";
 import { str, isoDate, ISO_HINT } from "@/tools/helpers";
+import { logger } from "@/lib/logger";
 
 const NOT_CONFIGURED = {
   error:
@@ -9,7 +10,11 @@ const NOT_CONFIGURED = {
 
 async function requireConnection(ctx: Parameters<NovaTool["execute"]>[1]) {
   const { calendar } = ctx.services;
-  if (!calendar.isConfigured()) return NOT_CONFIGURED;
+  if (!calendar.isConfigured()) {
+    // Diagnostic: shows exactly which field the cached config sees as missing.
+    logger.warn("calendar.not_configured", calendar.configStatus());
+    return NOT_CONFIGURED;
+  }
   if (!(await calendar.isConnected(ctx.user.id))) {
     return {
       connected: false,

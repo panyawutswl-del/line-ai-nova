@@ -53,6 +53,19 @@ export class CalendarService {
     );
   }
 
+  /** Per-field presence as seen by the (cached) app config — for diagnostics. */
+  configStatus(): {
+    clientId: boolean;
+    clientSecret: boolean;
+    redirectUri: boolean;
+  } {
+    return {
+      clientId: Boolean(this.google.clientId),
+      clientSecret: Boolean(this.google.clientSecret),
+      redirectUri: Boolean(this.google.redirectUri),
+    };
+  }
+
   async isConnected(userId: string): Promise<boolean> {
     return (await this.settings.get<StoredTokens>(userId, TOKENS_KEY)) !== null;
   }
