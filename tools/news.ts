@@ -7,7 +7,7 @@ export const newsTools: NovaTool[] = [
     declaration: {
       name: "get_news",
       description:
-        "Fetch latest news headlines for a topic (AI, technology, hotel industry, or anything else). Summarize the returned headlines for the user in their language.",
+        "Fetch latest news headlines for a topic. Known categories (AI, Technology, Travel, Hotel, Business) map to curated Thai queries; any other topic is searched verbatim. Summarize the returned headlines for the user in their language. If the result has ok=false, relay the 'message' field to the user as-is.",
       parameters: {
         type: Type.OBJECT,
         properties: {
@@ -19,8 +19,17 @@ export const newsTools: NovaTool[] = [
     async execute(args, ctx) {
       const topic = str(args, "topic");
       if (!topic) return { error: "topic is required" };
-      const headlines = await ctx.services.news.headlines(topic, 6);
-      return { topic, headlines };
+      const result = await ctx.services.news.getNews(topic, 6);
+      if (!result.ok) {
+        // Tell the model to relay this friendly line verbatim.
+        return { ok: false, topic: result.topic, message: result.message };
+      }
+      return {
+        ok: true,
+        topic: result.topic,
+        used_fallback: result.usedFallback,
+        headlines: result.headlines,
+      };
     },
   },
   {
