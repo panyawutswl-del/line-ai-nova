@@ -78,3 +78,4 @@ Webhook endpoint: `POST /api/webhook/line`
 | `npm run db:migrate` | apply migrations (production) |
 | `npm run db:seed` | seed owner user |
 | `npm run db:studio` | Prisma Studio GUI |
+# line-ai-nova
