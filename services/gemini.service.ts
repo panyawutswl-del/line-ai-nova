@@ -4,6 +4,7 @@ import {
   type GenerateContentResponse,
 } from "@google/genai";
 import { getToolDeclarations, executeTool } from "@/tools";
+import { buildOfflineReply } from "@/services/offline-responder";
 import type { ChatTurn, ToolContext } from "@/types";
 import { logger, errorInfo } from "@/lib/logger";
 
@@ -13,6 +14,17 @@ const MAX_TOOL_ROUNDS = 4;
 
 const FALLBACK_REPLY =
   "ขออภัยค่ะ ตอนนี้ระบบขัดข้องชั่วคราว ลองพิมพ์อีกครั้งได้เลยนะคะ 🙏";
+
+/** Shown when the Gemini quota is exhausted and no offline intent matched. */
+const QUOTA_REPLY =
+  "Nova ใช้งาน AI ครบโควต้าของวันนี้แล้ว กรุณาลองใหม่อีกครั้งในภายหลัง 🙏";
+
+/** Thrown on HTTP 429 so the chat loop can switch to the offline responder. */
+class GeminiQuotaError extends Error {}
+
+function isQuotaError(message: string): boolean {
+  return message.includes("429") || message.includes("RESOURCE_EXHAUSTED");
+}
 
 export class GeminiService {
   private ai: GoogleGenAI;
@@ -38,38 +50,60 @@ export class GeminiService {
       parts: [{ text: turn.text }],
     }));
 
-    for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-      const response = await this.generateWithRetry(
-        contents,
-        params.systemInstruction,
-      );
-      if (!response) return FALLBACK_REPLY;
-
-      const functionCalls = response.functionCalls ?? [];
-      if (functionCalls.length === 0) {
-        return response.text?.trim() || FALLBACK_REPLY;
-      }
-
-      // Echo the model's tool-call turn, then answer each call.
-      const modelContent = response.candidates?.[0]?.content;
-      if (modelContent) contents.push(modelContent);
-
-      const responseParts = [];
-      for (const call of functionCalls) {
-        const result = await executeTool(
-          call.name ?? "",
-          (call.args ?? {}) as Record<string, unknown>,
-          params.toolContext,
+    try {
+      for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+        const response = await this.generateWithRetry(
+          contents,
+          params.systemInstruction,
         );
-        responseParts.push({
-          functionResponse: { name: call.name, response: result },
-        });
-      }
-      contents.push({ role: "user", parts: responseParts });
-    }
+        if (!response) return FALLBACK_REPLY;
 
-    logger.warn("gemini.tool_loop_exhausted");
-    return FALLBACK_REPLY;
+        const functionCalls = response.functionCalls ?? [];
+        if (functionCalls.length === 0) {
+          return response.text?.trim() || FALLBACK_REPLY;
+        }
+
+        // Echo the model's tool-call turn, then answer each call.
+        const modelContent = response.candidates?.[0]?.content;
+        if (modelContent) contents.push(modelContent);
+
+        const responseParts = [];
+        for (const call of functionCalls) {
+          const result = await executeTool(
+            call.name ?? "",
+            (call.args ?? {}) as Record<string, unknown>,
+            params.toolContext,
+          );
+          responseParts.push({
+            functionResponse: { name: call.name, response: result },
+          });
+        }
+        contents.push({ role: "user", parts: responseParts });
+      }
+
+      logger.warn("gemini.tool_loop_exhausted");
+      return FALLBACK_REPLY;
+    } catch (err) {
+      if (err instanceof GeminiQuotaError) {
+        return this.quotaFallback(params.history, params.toolContext);
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Gemini is out of quota — answer a few simple intents without the model,
+   * else return the friendly quota message.
+   */
+  private async quotaFallback(
+    history: ChatTurn[],
+    toolContext: ToolContext,
+  ): Promise<string> {
+    const lastUser = [...history].reverse().find((h) => h.role === "user");
+    const offline = lastUser
+      ? await buildOfflineReply(lastUser.text, toolContext)
+      : null;
+    return offline ?? QUOTA_REPLY;
   }
 
   private async generateWithRetry(
@@ -89,7 +123,15 @@ export class GeminiService {
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        const retryable = message.includes("503") || message.includes("429");
+
+        // Quota exhausted: retrying within the webhook window won't help, so
+        // short-circuit to the offline responder immediately.
+        if (isQuotaError(message)) {
+          logger.error("gemini.quota_exceeded", { model: this.model });
+          throw new GeminiQuotaError(message);
+        }
+
+        const retryable = message.includes("503");
         logger.warn("gemini.attempt_failed", {
           attempt,
           retryable,
