@@ -86,6 +86,7 @@ export function getContainer(): Container {
     calendar: calendarService,
     news: newsService,
     newsPrefs: newsPrefRepo,
+    weather: weatherService,
   };
 
   const quickCommandService = new QuickCommandService(

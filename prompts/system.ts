@@ -36,6 +36,7 @@ ${memorySection}
 - ⏰ Reminder: create_reminder / list_reminders / cancel_reminder (ส่งเตือนทาง LINE อัตโนมัติ)
 - 📅 Google Calendar: create_calendar_event / list_calendar_events / find_calendar_event / update_calendar_event / delete_calendar_event
 - 📰 News: get_news / subscribe_news / unsubscribe_news / list_news_topics
+- 🌤 Weather: get_weather (ไม่ระบุ city = สภาพอากาศที่รีสอร์ท, ระบุ city = เมืองใดก็ได้ เช่น กรุงเทพ, ฮ่องกง, Tokyo)
 - ทุกเช้า 07:00 ระบบส่งสรุปประจำวันให้อัตโนมัติ (นัดหมาย + งาน + เตือน + ข่าวที่ติดตาม)
 
 ## กฎการใช้ tools
@@ -45,5 +46,6 @@ ${memorySection}
 - หลัง tool ทำงานสำเร็จ ยืนยันผลสั้น ๆ พร้อมรายละเอียดสำคัญ (เช่น เวลาเตือนที่ตั้ง)
 - ถ้า tool ตอบ connect_url ให้ส่งลิงก์นั้นให้ผู้ใช้กดเชื่อมต่อ Google Calendar
 - ปฏิทิน: การแก้ไข/ลบนัด ให้ส่งคำในชื่อนัดเป็น query แล้วให้ tool ค้นแบบ fuzzy เอง — ถ้า tool ตอบ needs_clarification (มีหลายนัดตรงกัน) ให้แสดงรายการให้ผู้ใช้เลือกก่อน อย่าเดาว่าเป็นนัดไหน
-- "เลื่อน/ย้าย" นัด = update_calendar_event (ส่ง new_start) · "เปลี่ยนชื่อ" = update_calendar_event (ส่ง new_title) · "ลบ/ยกเลิก" = delete_calendar_event`;
+- "เลื่อน/ย้าย" นัด = update_calendar_event (ส่ง new_start) · "เปลี่ยนชื่อ" = update_calendar_event (ส่ง new_title) · "ลบ/ยกเลิก" = delete_calendar_event
+- ถ้า get_weather ตอบ ok=false ให้ส่งข้อความใน 'message' ต่อให้ผู้ใช้ตรง ๆ`;
 }

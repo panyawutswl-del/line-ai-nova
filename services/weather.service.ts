@@ -46,9 +46,58 @@ export class WeatherService {
   constructor(private location: AppConfig["weather"]) {}
 
   async current(): Promise<WeatherSnapshot | null> {
+    return this.forecast(
+      this.location.latitude,
+      this.location.longitude,
+      this.location.locationName,
+    );
+  }
+
+  /** Geocodes `city` via Open-Meteo, then fetches its current forecast. Null if the city can't be found or any fetch fails. */
+  async forCity(city: string): Promise<WeatherSnapshot | null> {
+    const place = await this.geocode(city);
+    if (!place) return null;
+    return this.forecast(place.latitude, place.longitude, place.name);
+  }
+
+  private async geocode(
+    city: string,
+  ): Promise<{ latitude: number; longitude: number; name: string } | null> {
     const params = new URLSearchParams({
-      latitude: String(this.location.latitude),
-      longitude: String(this.location.longitude),
+      name: city,
+      count: "1",
+      language: "th",
+      format: "json",
+    });
+    try {
+      const res = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?${params}`,
+        { signal: AbortSignal.timeout(5_000) },
+      );
+      if (!res.ok) {
+        logger.warn("weather.geocode_failed", { status: res.status, city });
+        return null;
+      }
+      const data = (await res.json()) as {
+        results?: { latitude: number; longitude: number; name: string }[];
+      };
+      const match = data.results?.[0];
+      if (!match) return null;
+      return { latitude: match.latitude, longitude: match.longitude, name: match.name };
+    } catch (err) {
+      logger.warn("weather.geocode_failed", { ...errorInfo(err), city });
+      return null;
+    }
+  }
+
+  private async forecast(
+    latitude: number,
+    longitude: number,
+    locationName: string,
+  ): Promise<WeatherSnapshot | null> {
+    const params = new URLSearchParams({
+      latitude: String(latitude),
+      longitude: String(longitude),
       current: "temperature_2m,weather_code",
       daily:
         "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
@@ -76,7 +125,7 @@ export class WeatherService {
 
       const code = data.current.weather_code ?? 0;
       return {
-        locationName: this.location.locationName,
+        locationName,
         temperature: Math.round(data.current.temperature_2m),
         high: Math.round(data.daily?.temperature_2m_max?.[0] ?? data.current.temperature_2m),
         low: Math.round(data.daily?.temperature_2m_min?.[0] ?? data.current.temperature_2m),
