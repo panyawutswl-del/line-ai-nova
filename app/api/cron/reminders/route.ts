@@ -12,11 +12,16 @@ export const maxDuration = 60;
  * like cron-job.org on Hobby — see DEPLOYMENT_CHECKLIST.md).
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  logger.info("cron.reminders_triggered", {
+    hasAuthHeader: req.headers.has("authorization"),
+  });
   if (!isCronAuthorized(req)) {
+    logger.warn("cron.reminders_unauthorized");
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   try {
     const sent = await getContainer().reminderService.dispatchDue();
+    logger.info("cron.reminders_completed", { sent });
     return NextResponse.json({ ok: true, sent });
   } catch (err) {
     logger.error("cron.reminders_failed", errorInfo(err));

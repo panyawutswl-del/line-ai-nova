@@ -87,7 +87,9 @@ export class WebhookService {
     void this.users.touchLastLogin(user).catch(() => undefined);
     // Opportunistic fallback: deliver any due reminders even if the cron
     // pinger is down. Atomic claiming in the service prevents double-sends.
-    void this.reminders.dispatchDue().catch(() => undefined);
+    void this.reminders
+      .dispatchDue()
+      .catch((err) => logger.error("reminder.fallback_dispatch_failed", errorInfo(err)));
 
     const text = event.message.text;
 
