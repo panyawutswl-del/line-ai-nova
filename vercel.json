@@ -7,6 +7,18 @@
     {
       "path": "/api/cron/evening-wrapup",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/skytrade/crypto",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/skytrade/set",
+      "schedule": "30 0 * * *"
+    },
+    {
+      "path": "/api/cron/skytrade/us",
+      "schedule": "15 20 * * *"
     }
   ]
 }

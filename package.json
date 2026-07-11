@@ -25,10 +25,18 @@
     "@google/genai": "^1.52.0",
     "@line/bot-sdk": "^9.9.0",
     "@prisma/client": "^6.19.3",
+    "@skytrade/ai-summary": "file:../skytrade/packages/ai-summary",
+    "@skytrade/analysis-engine": "file:../skytrade/packages/analysis-engine",
+    "@skytrade/nova-skytrade-module": "file:../skytrade/packages/nova-skytrade-module",
+    "@skytrade/pipeline-scheduler": "file:../skytrade/packages/scheduler",
+    "@skytrade/telegram-bot": "file:../skytrade/packages/telegram-bot",
+    "@skytrade/telegram-formatter": "file:../skytrade/packages/telegram-formatter",
+    "@skytrade/tradingview-mcp": "file:../skytrade/packages/tradingview-mcp",
     "next": "^15.5.20",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "sharp": "^0.34.5",
+    "tradingview-mcp-server": "^0.6.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {

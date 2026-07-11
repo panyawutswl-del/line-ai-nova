@@ -24,6 +24,7 @@ import { BriefService } from "@/services/brief.service";
 import { UserService } from "@/services/user.service";
 import { ChatService } from "@/services/chat.service";
 import { WebhookService } from "@/services/webhook.service";
+import { createSkyTradeIntegration, type NovaSkyTradeHost } from "@/lib/skytrade";
 import type { ToolServices } from "@/types";
 
 /**
@@ -39,6 +40,8 @@ export interface Container {
   reminderService: ReminderService;
   briefService: BriefService;
   calendarService: CalendarService;
+  /** SkyTrade module registry — its schedules and Daily Brief deliveries. */
+  skytrade: NovaSkyTradeHost;
 }
 
 let container: Container | null = null;
@@ -124,6 +127,9 @@ export function getContainer(): Container {
     line,
   );
 
+  // SkyTrade module — registered once, TradingView MCP client injected once.
+  const { host: skytrade } = createSkyTradeIntegration();
+
   container = {
     line,
     userRepository: userRepo,
@@ -133,6 +139,7 @@ export function getContainer(): Container {
     reminderService,
     briefService,
     calendarService,
+    skytrade,
   };
   return container;
 }
