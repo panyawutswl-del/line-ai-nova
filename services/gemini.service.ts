@@ -112,7 +112,7 @@ export class GeminiService {
   ): Promise<GenerateContentResponse | null> {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        return await this.ai.models.generateContent({
+        const response = await this.ai.models.generateContent({
           model: this.model,
           contents,
           config: {
@@ -121,6 +121,25 @@ export class GeminiService {
             abortSignal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
           },
         });
+
+        // gemini-2.5-flash occasionally returns finishReason=STOP with a
+        // completely empty candidate (no text, no function call, zero
+        // output tokens) — a transient model glitch, not an API error, so
+        // it isn't caught below. Retry it like a 503 instead of treating
+        // the empty response as the model's real answer.
+        const hasFunctionCalls = (response.functionCalls?.length ?? 0) > 0;
+        const hasText = !!response.text?.trim();
+        if (!hasFunctionCalls && !hasText) {
+          logger.warn("gemini.empty_response", {
+            attempt,
+            finishReason: response.candidates?.[0]?.finishReason,
+          });
+          if (attempt === MAX_RETRIES) return response;
+          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+
+        return response;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
 
