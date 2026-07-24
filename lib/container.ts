@@ -10,6 +10,7 @@ import { CalendarEventRepository } from "@/repositories/calendar-event.repositor
 import { NewsPreferenceRepository } from "@/repositories/news-preference.repository";
 import { SettingsRepository } from "@/repositories/settings.repository";
 import { UserSettingsRepository } from "@/repositories/user-settings.repository";
+import { LocationRepository } from "@/repositories/location.repository";
 import { GeminiService } from "@/services/gemini.service";
 import { EmbeddingService } from "@/services/embedding.service";
 import { MemoryService } from "@/services/memory.service";
@@ -19,6 +20,7 @@ import { CalendarService } from "@/services/calendar.service";
 import { NewsService } from "@/services/news.service";
 import { WeatherService } from "@/services/weather.service";
 import { AirVisualService } from "@/services/airvisual.service";
+import { LocationService } from "@/services/location.service";
 import { SettingsService } from "@/services/settings.service";
 import { QuickCommandService } from "@/services/quick-command.service";
 import { BriefService } from "@/services/brief.service";
@@ -64,6 +66,7 @@ export function getContainer(): Container {
   const newsPrefRepo = new NewsPreferenceRepository(prisma);
   const settingsRepo = new SettingsRepository(prisma);
   const userSettingsRepo = new UserSettingsRepository(prisma);
+  const locationRepo = new LocationRepository(prisma);
 
   // Services
   const gemini = new GeminiService(config.gemini.apiKey, config.gemini.model);
@@ -80,6 +83,7 @@ export function getContainer(): Container {
   const newsService = new NewsService();
   const weatherService = new WeatherService(config.weather);
   const airvisualService = new AirVisualService(config.airvisual.apiKey);
+  const locationService = new LocationService(locationRepo);
   const settingsService = new SettingsService(userSettingsRepo);
 
   const toolServices: ToolServices = {
@@ -90,6 +94,8 @@ export function getContainer(): Container {
     news: newsService,
     newsPrefs: newsPrefRepo,
     weather: weatherService,
+    location: locationService,
+    airvisual: airvisualService,
   };
 
   const quickCommandService = new QuickCommandService(

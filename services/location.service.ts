@@ -34,6 +34,16 @@ export class LocationService {
     return location && location.userId === userId ? location : null;
   }
 
+  /** The user's default location, or null when none is set. */
+  getDefault(userId: string): Promise<Location | null> {
+    return this.locations.findDefault(userId);
+  }
+
+  /** Case-insensitive, partial name match against the user's saved locations. */
+  findMatches(userId: string, query: string): Promise<Location[]> {
+    return this.locations.searchByName(userId, query);
+  }
+
   async create(userId: string, input: LocationCreateInput): Promise<Location> {
     const location = await this.locations.create({ userId, ...input });
     logger.info("location.created", {

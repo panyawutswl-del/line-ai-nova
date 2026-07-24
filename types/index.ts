@@ -7,6 +7,8 @@ import type { CalendarService } from "@/services/calendar.service";
 import type { NewsService } from "@/services/news.service";
 import type { NewsPreferenceRepository } from "@/repositories/news-preference.repository";
 import type { WeatherService } from "@/services/weather.service";
+import type { LocationService } from "@/services/location.service";
+import type { AirVisualService } from "@/services/airvisual.service";
 
 /** Services tools are allowed to touch — injected per request, never imported. */
 export interface ToolServices {
@@ -17,6 +19,8 @@ export interface ToolServices {
   news: NewsService;
   newsPrefs: NewsPreferenceRepository;
   weather: WeatherService;
+  location: LocationService;
+  airvisual: AirVisualService;
 }
 
 /** Context passed to every tool execution — always scoped to one user. */

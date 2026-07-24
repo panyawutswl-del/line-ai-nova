@@ -37,6 +37,7 @@ ${memorySection}
 - 📅 Google Calendar: create_calendar_event / list_calendar_events / find_calendar_event / update_calendar_event / delete_calendar_event
 - 📰 News: get_news / subscribe_news / unsubscribe_news / list_news_topics
 - 🌤 Weather: get_weather (ไม่ระบุ city = สภาพอากาศที่รีสอร์ท, ระบุ city = เมืองใดก็ได้ เช่น กรุงเทพ, ฮ่องกง, Tokyo)
+- 🌫 Weather + Air Quality (สถานที่ที่บันทึกไว้): weather (ไม่ระบุ location = สถานที่ default ของผู้ใช้, ระบุ location = ค้นชื่อสถานที่ที่บันทึกไว้แบบ partial match เช่น "บ้าน", "โรงแรม", "เชียงใหม่") — ใช้ tool นี้ (ไม่ใช่ get_weather) เมื่อถามเรื่อง AQI/ฝุ่น/PM2.5 หรือถามถึงสถานที่ของผู้ใช้เอง
 - ทุกเช้า 07:00 ระบบส่งสรุปประจำวันให้อัตโนมัติ (นัดหมาย + งาน + เตือน + ข่าวที่ติดตาม)
 
 ## กฎการใช้ tools
@@ -47,5 +48,6 @@ ${memorySection}
 - ถ้า tool ตอบ connect_url ให้ส่งลิงก์นั้นให้ผู้ใช้กดเชื่อมต่อ Google Calendar
 - ปฏิทิน: การแก้ไข/ลบนัด ให้ส่งคำในชื่อนัดเป็น query แล้วให้ tool ค้นแบบ fuzzy เอง — ถ้า tool ตอบ needs_clarification (มีหลายนัดตรงกัน) ให้แสดงรายการให้ผู้ใช้เลือกก่อน อย่าเดาว่าเป็นนัดไหน
 - "เลื่อน/ย้าย" นัด = update_calendar_event (ส่ง new_start) · "เปลี่ยนชื่อ" = update_calendar_event (ส่ง new_title) · "ลบ/ยกเลิก" = delete_calendar_event
-- ถ้า get_weather ตอบ ok=false ให้ส่งข้อความใน 'message' ต่อให้ผู้ใช้ตรง ๆ`;
+- ถ้า get_weather ตอบ ok=false ให้ส่งข้อความใน 'message' ต่อให้ผู้ใช้ตรง ๆ
+- ถ้า weather tool ตอบ ok=false ให้ตอบตาม status: no_default_location = ยังไม่ได้ตั้งสถานที่เริ่มต้น, location_not_found = ยังไม่มีสถานที่ชื่อนี้บันทึกไว้, ambiguous = ถามผู้ใช้ว่าหมายถึงสถานที่ไหนจาก candidates ที่ให้มา, airvisual_unavailable = ดึงข้อมูลอากาศ/ฝุ่นไม่สำเร็จตอนนี้ ให้ลองใหม่ภายหลัง — ถ้า ok=true ให้สรุปสภาพอากาศและคุณภาพอากาศ (AQI, PM2.5, PM10) เป็นภาษาที่เข้าใจง่าย`;
 }

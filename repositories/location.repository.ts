@@ -45,6 +45,20 @@ export class LocationRepository {
     });
   }
 
+  findDefault(userId: string): Promise<Location | null> {
+    return this.prisma.location.findFirst({
+      where: { userId, isDefault: true },
+    });
+  }
+
+  /** Case-insensitive partial match on name, scoped to the user. */
+  searchByName(userId: string, query: string): Promise<Location[]> {
+    return this.prisma.location.findMany({
+      where: { userId, name: { contains: query, mode: "insensitive" } },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
   async update(
     id: string,
     userId: string,
