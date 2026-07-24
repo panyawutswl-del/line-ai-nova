@@ -11,6 +11,7 @@ import { NewsPreferenceRepository } from "@/repositories/news-preference.reposit
 import { SettingsRepository } from "@/repositories/settings.repository";
 import { UserSettingsRepository } from "@/repositories/user-settings.repository";
 import { LocationRepository } from "@/repositories/location.repository";
+import { WeatherAlertRepository } from "@/repositories/weather-alert.repository";
 import { GeminiService } from "@/services/gemini.service";
 import { EmbeddingService } from "@/services/embedding.service";
 import { MemoryService } from "@/services/memory.service";
@@ -21,6 +22,7 @@ import { NewsService } from "@/services/news.service";
 import { WeatherService } from "@/services/weather.service";
 import { AirVisualService } from "@/services/airvisual.service";
 import { LocationService } from "@/services/location.service";
+import { WeatherAlertService } from "@/services/weather-alert.service";
 import { GeocodingService } from "@/services/geocoding.service";
 import { NominatimProvider } from "@/services/geocoding/nominatim.provider";
 import { SettingsService } from "@/services/settings.service";
@@ -45,6 +47,7 @@ export interface Container {
   briefService: BriefService;
   calendarService: CalendarService;
   airvisualService: AirVisualService;
+  weatherAlertService: WeatherAlertService;
 }
 
 let container: Container | null = null;
@@ -69,6 +72,7 @@ export function getContainer(): Container {
   const settingsRepo = new SettingsRepository(prisma);
   const userSettingsRepo = new UserSettingsRepository(prisma);
   const locationRepo = new LocationRepository(prisma);
+  const weatherAlertRepo = new WeatherAlertRepository(prisma);
 
   // Services
   const gemini = new GeminiService(config.gemini.apiKey, config.gemini.model);
@@ -87,6 +91,12 @@ export function getContainer(): Container {
   const airvisualService = new AirVisualService(config.airvisual.apiKey);
   const locationService = new LocationService(locationRepo);
   const geocodingService = new GeocodingService(new NominatimProvider());
+  const weatherAlertService = new WeatherAlertService(
+    weatherAlertRepo,
+    locationService,
+    airvisualService,
+    line,
+  );
   const settingsService = new SettingsService(userSettingsRepo);
 
   const toolServices: ToolServices = {
@@ -147,6 +157,7 @@ export function getContainer(): Container {
     briefService,
     calendarService,
     airvisualService,
+    weatherAlertService,
   };
   return container;
 }
