@@ -1,4 +1,5 @@
 import type {
+  ComparisonOperator,
   Location,
   PrismaClient,
   User,
@@ -10,6 +11,7 @@ export interface WeatherAlertInput {
   userId: string;
   locationId: string;
   type: WeatherAlertType;
+  comparison?: ComparisonOperator;
   threshold?: number;
 }
 

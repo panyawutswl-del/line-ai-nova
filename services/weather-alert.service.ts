@@ -1,4 +1,4 @@
-import type { WeatherAlert, WeatherAlertType } from "@prisma/client";
+import type { ComparisonOperator, WeatherAlert, WeatherAlertType } from "@prisma/client";
 import type {
   WeatherAlertRepository,
   WeatherAlertWithContext,
@@ -26,6 +26,7 @@ export interface CreateWeatherAlertInput {
   locationId: string;
   type: WeatherAlertType;
   /** Required for AQI/PM25/TEMPERATURE/WIND; ignored for RAIN. */
+  comparison?: ComparisonOperator;
   threshold?: number;
 }
 
@@ -36,55 +37,74 @@ function isRainIcon(icon: string): boolean {
   return RAIN_ICON_PREFIXES.some((prefix) => icon.startsWith(prefix));
 }
 
+const COMPARISON_SYMBOL: Record<ComparisonOperator, string> = {
+  GT: ">",
+  GTE: ">=",
+  LT: "<",
+  LTE: "<=",
+};
+
+function compare(value: number, comparison: ComparisonOperator, threshold: number): boolean {
+  switch (comparison) {
+    case "GT":
+      return value > threshold;
+    case "GTE":
+      return value >= threshold;
+    case "LT":
+      return value < threshold;
+    case "LTE":
+      return value <= threshold;
+  }
+}
+
 /** Whether the alert's condition currently holds, given a fresh AirVisual snapshot. */
 export function evaluateCondition(
   type: WeatherAlertType,
+  comparison: ComparisonOperator | null,
   threshold: number | null,
   data: AirQualitySnapshot,
 ): boolean {
+  if (type === "RAIN") return isRainIcon(data.weather.weatherIcon);
+  if (comparison === null || threshold === null) return false;
+
   switch (type) {
     case "AQI":
-      return threshold !== null && data.airQuality.aqiUs > threshold;
+      return compare(data.airQuality.aqiUs, comparison, threshold);
     case "PM25":
-      return (
-        threshold !== null &&
-        data.airQuality.pm25 !== null &&
-        data.airQuality.pm25 > threshold
-      );
+      return data.airQuality.pm25 !== null && compare(data.airQuality.pm25, comparison, threshold);
     case "TEMPERATURE":
-      return threshold !== null && data.weather.temperature > threshold;
+      return compare(data.weather.temperature, comparison, threshold);
     case "WIND":
-      return threshold !== null && data.weather.windSpeed > threshold;
-    case "RAIN":
-      return isRainIcon(data.weather.weatherIcon);
+      return compare(data.weather.windSpeed, comparison, threshold);
   }
 }
 
 const TYPE_LABEL: Record<WeatherAlertType, string> = {
-  AQI: "AQI สูงเกินเกณฑ์",
-  PM25: "ฝุ่น PM2.5 สูงเกินเกณฑ์",
+  AQI: "AQI",
+  PM25: "ฝุ่น PM2.5",
   RAIN: "มีแนวโน้มฝนตกหนัก",
-  TEMPERATURE: "อุณหภูมิสูงเกินเกณฑ์",
-  WIND: "ลมแรงเกินเกณฑ์",
+  TEMPERATURE: "อุณหภูมิ",
+  WIND: "ความเร็วลม",
 };
 
 function buildAlertMessage(
   alert: WeatherAlertWithContext,
   data: AirQualitySnapshot,
 ): string {
+  const symbol = alert.comparison ? COMPARISON_SYMBOL[alert.comparison] : "";
   const lines = [`⚠️ แจ้งเตือน: ${TYPE_LABEL[alert.type]}`, `📍 ${alert.location.name}`];
   switch (alert.type) {
     case "AQI":
-      lines.push(`AQI ปัจจุบัน ${data.airQuality.aqiUs} (เกณฑ์ ${alert.threshold})`);
+      lines.push(`AQI ปัจจุบัน ${data.airQuality.aqiUs} (เงื่อนไข ${symbol} ${alert.threshold})`);
       break;
     case "PM25":
-      lines.push(`PM2.5 ปัจจุบัน ${data.airQuality.pm25} µg/m³ (เกณฑ์ ${alert.threshold})`);
+      lines.push(`PM2.5 ปัจจุบัน ${data.airQuality.pm25} µg/m³ (เงื่อนไข ${symbol} ${alert.threshold})`);
       break;
     case "TEMPERATURE":
-      lines.push(`อุณหภูมิปัจจุบัน ${data.weather.temperature}°C (เกณฑ์ ${alert.threshold}°C)`);
+      lines.push(`อุณหภูมิปัจจุบัน ${data.weather.temperature}°C (เงื่อนไข ${symbol} ${alert.threshold}°C)`);
       break;
     case "WIND":
-      lines.push(`ความเร็วลมปัจจุบัน ${data.weather.windSpeed} m/s (เกณฑ์ ${alert.threshold} m/s)`);
+      lines.push(`ความเร็วลมปัจจุบัน ${data.weather.windSpeed} m/s (เงื่อนไข ${symbol} ${alert.threshold} m/s)`);
       break;
     case "RAIN":
       lines.push("โปรดเตรียมร่มหรือเสื้อกันฝนไว้ล่วงหน้า");
@@ -116,12 +136,14 @@ export class WeatherAlertService {
       userId,
       locationId: input.locationId,
       type: input.type,
+      comparison: input.comparison,
       threshold: input.threshold,
     });
     logger.info("weather_alert.created", {
       userId,
       alertId: alert.id,
       type: alert.type,
+      comparison: alert.comparison,
       threshold: alert.threshold,
     });
     return alert;
@@ -173,7 +195,12 @@ export class WeatherAlertService {
         continue;
       }
 
-      const condition = evaluateCondition(alert.type, alert.threshold, result.data);
+      const condition = evaluateCondition(
+        alert.type,
+        alert.comparison,
+        alert.threshold,
+        result.data,
+      );
 
       if (condition && !alert.lastState) {
         try {

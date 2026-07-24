@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { Location, User, WeatherAlert, WeatherAlertType } from "@prisma/client";
+import type {
+  ComparisonOperator,
+  Location,
+  User,
+  WeatherAlert,
+  WeatherAlertType,
+} from "@prisma/client";
 import type {
   WeatherAlertRepository,
   WeatherAlertWithContext,
@@ -49,6 +55,7 @@ function makeAlert(overrides: Partial<WeatherAlertWithContext> = {}): WeatherAle
     userId: "user-1",
     locationId: "loc-1",
     type: "AQI" as WeatherAlertType,
+    comparison: "GT" as ComparisonOperator,
     threshold: 100,
     isEnabled: true,
     lastState: false,
@@ -71,10 +78,12 @@ function makeFakeAlertRepo(seed: WeatherAlertWithContext[] = []) {
       userId: string;
       locationId: string;
       type: WeatherAlertType;
+      comparison?: ComparisonOperator;
       threshold?: number;
     }): Promise<WeatherAlert> => {
       const created: WeatherAlertWithContext = {
         id: `alert-${store.length + 1}`,
+        comparison: data.comparison ?? null,
         threshold: data.threshold ?? null,
         isEnabled: true,
         lastState: false,
@@ -176,35 +185,52 @@ describe("evaluateCondition", () => {
     metadata: { city: "Bangkok", state: "Bangkok", country: "Thailand", timestamp: "" },
   };
 
-  it("AQI: true only when above threshold", () => {
-    expect(evaluateCondition("AQI", 100, { ...base, airQuality: { ...base.airQuality, aqiUs: 150 } })).toBe(true);
-    expect(evaluateCondition("AQI", 100, { ...base, airQuality: { ...base.airQuality, aqiUs: 50 } })).toBe(false);
+  it("AQI: GT is true only when strictly above threshold", () => {
+    expect(evaluateCondition("AQI", "GT", 100, { ...base, airQuality: { ...base.airQuality, aqiUs: 150 } })).toBe(true);
+    expect(evaluateCondition("AQI", "GT", 100, { ...base, airQuality: { ...base.airQuality, aqiUs: 100 } })).toBe(false);
+    expect(evaluateCondition("AQI", "GT", 100, { ...base, airQuality: { ...base.airQuality, aqiUs: 50 } })).toBe(false);
+  });
+
+  it("AQI: LT is true only when strictly below threshold (e.g. 'AQI ต่ำกว่า 50')", () => {
+    expect(evaluateCondition("AQI", "LT", 50, { ...base, airQuality: { ...base.airQuality, aqiUs: 40 } })).toBe(true);
+    expect(evaluateCondition("AQI", "LT", 50, { ...base, airQuality: { ...base.airQuality, aqiUs: 50 } })).toBe(false);
+    expect(evaluateCondition("AQI", "LT", 50, { ...base, airQuality: { ...base.airQuality, aqiUs: 60 } })).toBe(false);
+  });
+
+  it("AQI: GTE and LTE are inclusive at the threshold", () => {
+    expect(evaluateCondition("AQI", "GTE", 100, { ...base, airQuality: { ...base.airQuality, aqiUs: 100 } })).toBe(true);
+    expect(evaluateCondition("AQI", "LTE", 50, { ...base, airQuality: { ...base.airQuality, aqiUs: 50 } })).toBe(true);
+  });
+
+  it("returns false without a comparison or threshold, even for a threshold-based type", () => {
+    expect(evaluateCondition("AQI", null, 100, { ...base, airQuality: { ...base.airQuality, aqiUs: 150 } })).toBe(false);
+    expect(evaluateCondition("AQI", "GT", null, { ...base, airQuality: { ...base.airQuality, aqiUs: 150 } })).toBe(false);
   });
 
   it("PM25: false when pm2.5 is unavailable, even above a hypothetical threshold", () => {
-    expect(evaluateCondition("PM25", 10, base)).toBe(false);
+    expect(evaluateCondition("PM25", "GT", 10, base)).toBe(false);
   });
 
   it("PM25: true when concentration exceeds threshold", () => {
     expect(
-      evaluateCondition("PM25", 10, { ...base, airQuality: { ...base.airQuality, pm25: 50 } }),
+      evaluateCondition("PM25", "GT", 10, { ...base, airQuality: { ...base.airQuality, pm25: 50 } }),
     ).toBe(true);
   });
 
   it("TEMPERATURE: true only when above threshold", () => {
-    expect(evaluateCondition("TEMPERATURE", 35, { ...base, weather: { ...base.weather, temperature: 40 } })).toBe(true);
-    expect(evaluateCondition("TEMPERATURE", 35, { ...base, weather: { ...base.weather, temperature: 30 } })).toBe(false);
+    expect(evaluateCondition("TEMPERATURE", "GT", 35, { ...base, weather: { ...base.weather, temperature: 40 } })).toBe(true);
+    expect(evaluateCondition("TEMPERATURE", "GT", 35, { ...base, weather: { ...base.weather, temperature: 30 } })).toBe(false);
   });
 
   it("WIND: true only when above threshold", () => {
-    expect(evaluateCondition("WIND", 10, { ...base, weather: { ...base.weather, windSpeed: 15 } })).toBe(true);
-    expect(evaluateCondition("WIND", 10, { ...base, weather: { ...base.weather, windSpeed: 5 } })).toBe(false);
+    expect(evaluateCondition("WIND", "GT", 10, { ...base, weather: { ...base.weather, windSpeed: 15 } })).toBe(true);
+    expect(evaluateCondition("WIND", "GT", 10, { ...base, weather: { ...base.weather, windSpeed: 5 } })).toBe(false);
   });
 
-  it("RAIN: true for rain/thunderstorm icon codes, false otherwise", () => {
-    expect(evaluateCondition("RAIN", null, { ...base, weather: { ...base.weather, weatherIcon: "10d" } })).toBe(true);
-    expect(evaluateCondition("RAIN", null, { ...base, weather: { ...base.weather, weatherIcon: "11n" } })).toBe(true);
-    expect(evaluateCondition("RAIN", null, { ...base, weather: { ...base.weather, weatherIcon: "01d" } })).toBe(false);
+  it("RAIN: true for rain/thunderstorm icon codes, false otherwise — ignores comparison/threshold", () => {
+    expect(evaluateCondition("RAIN", null, null, { ...base, weather: { ...base.weather, weatherIcon: "10d" } })).toBe(true);
+    expect(evaluateCondition("RAIN", null, null, { ...base, weather: { ...base.weather, weatherIcon: "11n" } })).toBe(true);
+    expect(evaluateCondition("RAIN", null, null, { ...base, weather: { ...base.weather, weatherIcon: "01d" } })).toBe(false);
   });
 });
 
@@ -255,10 +281,12 @@ describe("WeatherAlertService", () => {
       const alert = await service.create("user-1", {
         locationId: "loc-1",
         type: "AQI",
+        comparison: "GT",
         threshold: 100,
       });
 
       expect(alert.type).toBe("AQI");
+      expect(alert.comparison).toBe("GT");
       expect(alert.threshold).toBe(100);
       expect(alert.isEnabled).toBe(true);
     });

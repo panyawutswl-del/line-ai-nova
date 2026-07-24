@@ -65,6 +65,13 @@ enum WeatherAlertType {
   WIND
 }
 
+enum ComparisonOperator {
+  GT
+  GTE
+  LT
+  LTE
+}
+
 model User {
   id          String    @id @default(uuid())
   lineUserId  String    @unique @map("line_user_id")
@@ -233,7 +240,9 @@ model WeatherAlert {
   userId         String           @map("user_id")
   locationId     String           @map("location_id")
   type           WeatherAlertType
-  /** Threshold the metric must exceed. Unused for RAIN (icon-based). */
+  /** Comparison the metric must satisfy against `threshold`. Unused for RAIN (icon-based). */
+  comparison     ComparisonOperator?
+  /** Threshold the metric is compared against. Unused for RAIN (icon-based). */
   threshold      Float?
   isEnabled      Boolean          @default(true) @map("is_enabled")
   /** Whether the condition was true as of the last evaluation — used to fire only on false→true transitions. */

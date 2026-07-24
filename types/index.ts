@@ -10,6 +10,7 @@ import type { WeatherService } from "@/services/weather.service";
 import type { LocationService } from "@/services/location.service";
 import type { AirVisualService } from "@/services/airvisual.service";
 import type { GeocodingService } from "@/services/geocoding.service";
+import type { WeatherAlertService } from "@/services/weather-alert.service";
 
 /** Services tools are allowed to touch — injected per request, never imported. */
 export interface ToolServices {
@@ -23,6 +24,7 @@ export interface ToolServices {
   location: LocationService;
   airvisual: AirVisualService;
   geocoding: GeocodingService;
+  weatherAlert: WeatherAlertService;
 }
 
 /** Context passed to every tool execution — always scoped to one user. */

@@ -110,6 +110,7 @@ export function getContainer(): Container {
     location: locationService,
     airvisual: airvisualService,
     geocoding: geocodingService,
+    weatherAlert: weatherAlertService,
   };
 
   const quickCommandService = new QuickCommandService(
