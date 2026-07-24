@@ -17,6 +17,46 @@ import { weatherAlertTools } from "@/tools/weather-alert";
 
 const weatherAlertTool = weatherAlertTools[0];
 
+describe("weather_alert tool declaration (bugfix: Gemini wasn't invoking it for PM2.5 alerts)", () => {
+  it("declares PM25 as a valid type", () => {
+    expect(weatherAlertTool.declaration.parameters?.properties?.type?.enum).toContain("PM25");
+  });
+
+  it("exposes comparison as an enum of >, >=, <, <=", () => {
+    expect(weatherAlertTool.declaration.parameters?.properties?.comparison?.enum).toEqual([
+      ">",
+      ">=",
+      "<",
+      "<=",
+    ]);
+  });
+
+  it("includes concrete trigger phrases for every alert-management example, so Gemini's tool selection matches natural-language requests", () => {
+    const description = weatherAlertTool.declaration.description ?? "";
+    const phrases = [
+      "แจ้งเมื่อ AQI เกิน 100",
+      "แจ้งเมื่อ PM2.5 เกิน 35",
+      "แจ้งเมื่ออุณหภูมิสูงกว่า 38",
+      "ปิดการแจ้งเตือน AQI",
+      "แสดงการแจ้งเตือนของฉัน",
+    ];
+    for (const phrase of phrases) {
+      expect(description).toContain(phrase);
+    }
+  });
+
+  it("tells Gemini to always call the tool rather than decline the request", () => {
+    const description = weatherAlertTool.declaration.description ?? "";
+    expect(description).toContain("ALWAYS call this tool");
+    expect(description).toContain("never reply that this can't be done automatically");
+  });
+
+  it("distinguishes itself from create_reminder (time-based, not condition-based)", () => {
+    const description = weatherAlertTool.declaration.description ?? "";
+    expect(description).toContain("create_reminder");
+  });
+});
+
 const USER: User = {
   id: "user-1",
   lineUserId: "U123",

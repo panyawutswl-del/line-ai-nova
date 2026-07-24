@@ -85,3 +85,30 @@ describe("system prompt — weather/AQI advisory guidance (M5)", () => {
     expect(prompt).toContain("weather สำหรับ AQI/PM2.5/PM10");
   });
 });
+
+describe("system prompt — weather_alert tool triggering (bugfix)", () => {
+  it("covers every example alert-management phrase that must invoke weather_alert", () => {
+    const phrases = [
+      "แจ้งเมื่อ PM2.5 เกิน 35",
+      "แจ้งเมื่อ AQI เกิน 100",
+      "แจ้งเมื่ออุณหภูมิสูงกว่า 38",
+      "ปิดการแจ้งเตือน AQI",
+      "แสดงการแจ้งเตือนของฉัน",
+    ];
+    for (const phrase of phrases) {
+      expect(prompt).toContain(phrase);
+    }
+  });
+
+  it("explicitly forbids declining a condition-based alert request without calling the tool", () => {
+    expect(prompt).toContain("ห้ามตอบว่าทำให้อัตโนมัติไม่ได้หรือปฏิเสธโดยไม่เรียก tool นี้ก่อน");
+  });
+
+  it("distinguishes weather_alert (condition-based) from create_reminder (time-based)", () => {
+    expect(prompt).toContain("อย่าสับสนกับ create_reminder ซึ่งเป็นการเตือนตามเวลา ไม่ใช่ตามเงื่อนไข");
+  });
+
+  it("maps each alert phrasing to the correct action", () => {
+    expect(prompt).toContain('ต้องเรียก weather_alert เสมอ (action=create/enable/disable/delete/list ตามลำดับ)');
+  });
+});

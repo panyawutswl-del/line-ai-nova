@@ -112,7 +112,7 @@ export const weatherAlertTools: NovaTool[] = [
     declaration: {
       name: "weather_alert",
       description:
-        "Manage the user's weather/AQI alerts, which notify automatically via LINE when a condition starts being true. action=create sets up a new alert (type + comparison + threshold required; RAIN alerts aren't supported yet). action=list shows all the user's alerts. action=enable/disable turns an alert on/off without deleting it. action=delete removes it. For delete/enable/disable, identify the alert either by alert_id (if you already have it from a list call) or by type + location.",
+        "Set up, list, or toggle standing weather/AQI alerts that notify automatically via LINE the moment a condition becomes true (no fixed time — unlike create_reminder). ALWAYS call this tool for any request to be notified/alerted based on a weather or air-quality threshold — never reply that this can't be done automatically. Trigger phrases include: 'แจ้งเมื่อ AQI เกิน 100', 'แจ้งเมื่อ PM2.5 เกิน 35', 'แจ้งเตือนถ้าฝุ่นเกิน 50', 'แจ้งเมื่ออุณหภูมิสูงกว่า 38', 'บอกฉันถ้าลมแรงเกิน 10', 'notify me when AQI is above 100', 'alert me if PM2.5 exceeds 35' (all → action=create); 'ปิดการแจ้งเตือน AQI', 'หยุดแจ้งเตือนฝุ่น' (→ action=disable); 'เปิดการแจ้งเตือนอุณหภูมิ' (→ action=enable); 'ลบการแจ้งเตือน AQI' (→ action=delete); 'แสดงการแจ้งเตือนของฉัน', 'มีการแจ้งเตือนอะไรบ้าง', 'list my alerts' (→ action=list). action=create requires type + comparison + threshold (RAIN alerts aren't supported yet). For delete/enable/disable, identify the alert either by alert_id (if you already have it from a list call) or by type + location.",
       parameters: {
         type: Type.OBJECT,
         properties: {
