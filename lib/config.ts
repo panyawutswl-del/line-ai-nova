@@ -18,6 +18,8 @@ const envSchema = z.object({
   WEATHER_LATITUDE: z.coerce.number().default(17.0078),
   WEATHER_LONGITUDE: z.coerce.number().default(99.8237),
   WEATHER_LOCATION_NAME: z.string().default("สุโขทัย"),
+  // AirVisual (IQAir) — air quality + weather by lat/lon. Empty when not configured.
+  AIRVISUAL_API_KEY: z.string().default(""),
 });
 
 export interface AppConfig {
@@ -47,6 +49,10 @@ export interface AppConfig {
     latitude: number;
     longitude: number;
     locationName: string;
+  };
+  /** Empty string when AirVisual integration is not configured. */
+  airvisual: {
+    apiKey: string;
   };
 }
 
@@ -91,6 +97,9 @@ export function getConfig(): AppConfig {
       latitude: env.WEATHER_LATITUDE,
       longitude: env.WEATHER_LONGITUDE,
       locationName: env.WEATHER_LOCATION_NAME.trim(),
+    },
+    airvisual: {
+      apiKey: env.AIRVISUAL_API_KEY.trim(),
     },
   };
   return cached;

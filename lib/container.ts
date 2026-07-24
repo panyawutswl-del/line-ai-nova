@@ -18,6 +18,7 @@ import { ReminderService } from "@/services/reminder.service";
 import { CalendarService } from "@/services/calendar.service";
 import { NewsService } from "@/services/news.service";
 import { WeatherService } from "@/services/weather.service";
+import { AirVisualService } from "@/services/airvisual.service";
 import { SettingsService } from "@/services/settings.service";
 import { QuickCommandService } from "@/services/quick-command.service";
 import { BriefService } from "@/services/brief.service";
@@ -39,6 +40,7 @@ export interface Container {
   reminderService: ReminderService;
   briefService: BriefService;
   calendarService: CalendarService;
+  airvisualService: AirVisualService;
 }
 
 let container: Container | null = null;
@@ -77,6 +79,7 @@ export function getContainer(): Container {
   );
   const newsService = new NewsService();
   const weatherService = new WeatherService(config.weather);
+  const airvisualService = new AirVisualService(config.airvisual.apiKey);
   const settingsService = new SettingsService(userSettingsRepo);
 
   const toolServices: ToolServices = {
@@ -133,6 +136,7 @@ export function getContainer(): Container {
     reminderService,
     briefService,
     calendarService,
+    airvisualService,
   };
   return container;
 }
