@@ -37,7 +37,7 @@ function isRainIcon(icon: string): boolean {
   return RAIN_ICON_PREFIXES.some((prefix) => icon.startsWith(prefix));
 }
 
-const COMPARISON_SYMBOL: Record<ComparisonOperator, string> = {
+export const COMPARISON_SYMBOL: Record<ComparisonOperator, string> = {
   GT: ">",
   GTE: ">=",
   LT: "<",

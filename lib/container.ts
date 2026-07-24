@@ -143,7 +143,9 @@ export function getContainer(): Container {
     newsPrefRepo,
     newsService,
     calendarService,
-    weatherService,
+    locationService,
+    airvisualService,
+    weatherAlertService,
     settingsService,
     line,
   );
