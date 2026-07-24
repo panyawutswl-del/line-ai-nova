@@ -9,6 +9,7 @@ import { calendarTools } from "@/tools/calendar";
 import { newsTools } from "@/tools/news";
 import { weatherTools } from "@/tools/weather";
 import { airQualityTools } from "@/tools/air-quality";
+import { locationTools } from "@/tools/location";
 
 const tools: NovaTool[] = [
   getCurrentDatetimeTool,
@@ -19,6 +20,7 @@ const tools: NovaTool[] = [
   ...newsTools,
   ...weatherTools,
   ...airQualityTools,
+  ...locationTools,
 ];
 
 const registry = new Map<string, NovaTool>(

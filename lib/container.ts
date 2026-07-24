@@ -21,6 +21,8 @@ import { NewsService } from "@/services/news.service";
 import { WeatherService } from "@/services/weather.service";
 import { AirVisualService } from "@/services/airvisual.service";
 import { LocationService } from "@/services/location.service";
+import { GeocodingService } from "@/services/geocoding.service";
+import { NominatimProvider } from "@/services/geocoding/nominatim.provider";
 import { SettingsService } from "@/services/settings.service";
 import { QuickCommandService } from "@/services/quick-command.service";
 import { BriefService } from "@/services/brief.service";
@@ -84,6 +86,7 @@ export function getContainer(): Container {
   const weatherService = new WeatherService(config.weather);
   const airvisualService = new AirVisualService(config.airvisual.apiKey);
   const locationService = new LocationService(locationRepo);
+  const geocodingService = new GeocodingService(new NominatimProvider());
   const settingsService = new SettingsService(userSettingsRepo);
 
   const toolServices: ToolServices = {
@@ -96,6 +99,7 @@ export function getContainer(): Container {
     weather: weatherService,
     location: locationService,
     airvisual: airvisualService,
+    geocoding: geocodingService,
   };
 
   const quickCommandService = new QuickCommandService(
