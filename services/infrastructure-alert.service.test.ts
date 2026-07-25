@@ -17,4 +17,20 @@ describe("InfrastructureAlertService", () => {
       expect.stringContaining("UPS has entered battery mode."),
     );
   });
+
+  it("formats and pushes a Power Restored notification to the owner", async () => {
+    const pushText = vi.fn().mockResolvedValue(undefined);
+    const service = new InfrastructureAlertService({ pushText }, "U-owner");
+
+    await service.notifyPowerRestored({ dsmMessage: "UPS has returned to AC mode." });
+
+    expect(pushText).toHaveBeenCalledWith(
+      "U-owner",
+      expect.stringContaining("ไฟฟ้ากลับมาแล้ว — NAS เลิกใช้แบตเตอรี่จาก UPS"),
+    );
+    expect(pushText).toHaveBeenCalledWith(
+      "U-owner",
+      expect.stringContaining("UPS has returned to AC mode."),
+    );
+  });
 });

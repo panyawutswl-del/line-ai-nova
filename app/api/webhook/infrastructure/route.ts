@@ -14,7 +14,12 @@ function secretsMatch(provided: string | null, expected: string): boolean {
   return providedBytes.length === expectedBytes.length && timingSafeEqual(providedBytes, expectedBytes);
 }
 
-/** Receives only the milestone-1 DSM event: UPS entered battery mode. */
+/** DSM notification rules this endpoint accepts. Unknown events are rejected. */
+const KNOWN_EVENTS = new Set(["ups_on_battery", "power_restored"]);
+/** The original DSM rule sends no `event` field — preserve its behavior. */
+const DEFAULT_EVENT = "ups_on_battery";
+
+/** Receives signed Synology DSM power-event webhooks. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { infrastructure, auth } = getConfig();
   const secret = req.headers.get("x-nova-infrastructure-secret");
@@ -34,20 +39,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch {
     return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
   }
-  const text = typeof payload === "object" && payload !== null && "text" in payload
-    ? (payload as { text?: unknown }).text
-    : undefined;
+  const body = typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : {};
+  const text = body.text;
   if (typeof text !== "string" || !text.trim()) {
     return NextResponse.json({ error: "text is required" }, { status: 400 });
   }
+  const event = typeof body.event === "string" && body.event.trim() ? body.event.trim() : DEFAULT_EVENT;
+  if (!KNOWN_EVENTS.has(event)) {
+    return NextResponse.json({ error: `unknown event: ${event}` }, { status: 400 });
+  }
 
   try {
-    await getContainer().infrastructureAlertService.notifyUpsOnBattery({
-      dsmMessage: text.trim(),
-    });
-    return NextResponse.json({ ok: true, event: "ups_on_battery" });
+    const alert = { dsmMessage: text.trim() };
+    if (event === "power_restored") {
+      await getContainer().infrastructureAlertService.notifyPowerRestored(alert);
+    } else {
+      await getContainer().infrastructureAlertService.notifyUpsOnBattery(alert);
+    }
+    return NextResponse.json({ ok: true, event });
   } catch (err) {
-    logger.error("infrastructure.ups_on_battery_failed", errorInfo(err));
+    logger.error("infrastructure.notify_failed", { event, ...errorInfo(err) });
     return NextResponse.json({ error: "delivery failed" }, { status: 502 });
   }
 }

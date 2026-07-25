@@ -1,10 +1,11 @@
 # Nova Infrastructure Module — UPS On Battery
 
-## Milestone 1 scope
+## Scope
 
-When DSM detects that the USB UPS has entered **On Battery** mode, Nova sends the
-owner a LINE alert. This milestone deliberately excludes power restored, low
-battery, NAS shutdown, and Docker health so each event can be tested separately.
+When DSM detects that the USB UPS has entered **On Battery** mode, or that power
+has been **restored** (UPS back to AC), Nova sends the owner a LINE alert. This
+still deliberately excludes low battery, NAS shutdown, and Docker health so each
+event is added and tested separately.
 
 ## Architecture decision
 
@@ -45,11 +46,15 @@ The endpoint is:
 POST https://<your-nova-domain>/api/webhook/infrastructure
 ```
 
-It accepts only:
+It accepts:
 
 ```json
-{"text":"<DSM notification text>"}
+{"event":"ups_on_battery","text":"<DSM notification text>"}
 ```
+
+`event` is one of `ups_on_battery` or `power_restored`. It is optional and
+defaults to `ups_on_battery` (kept for the existing DSM rule below, which does
+not send an `event` field). Any other value returns `400`.
 
 with header:
 
@@ -69,7 +74,7 @@ X-Nova-Infrastructure-Secret: <same secret as Vercel>
 7. Set the JSON body to:
 
    ```json
-   {"text":"@@TEXT@@"}
+   {"event":"ups_on_battery","text":"@@TEXT@@"}
    ```
 
 8. Click **Send Test Message**. A successful response is:
@@ -81,13 +86,39 @@ X-Nova-Infrastructure-Secret: <same secret as Vercel>
 DSM supports Custom Webhooks, POST JSON bodies, headers, and the `@@TEXT@@`
 placeholder. Refer to [Synology's Webhooks guide](https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/system_notification_webhook?version=7).
 
+### Second rule — Power Restored
+
+Repeat the same steps with:
+
+1. Name it `Nova Power Restored`.
+2. Rule contains only **The UPS has returned to AC mode** (uncheck everything
+   else — same reasoning as the On Battery rule: DSM's other power events
+   aren't handled yet).
+3. Same URL and `X-Nova-Infrastructure-Secret` header as above.
+4. JSON body:
+
+   ```json
+   {"event":"power_restored","text":"@@TEXT@@"}
+   ```
+
+5. **Send Test Message** → expect `{"ok":true,"event":"power_restored"}`.
+
+The expected Nova text for this one starts with:
+
+```text
+✅ Nova แจ้งเตือนระบบ
+
+ไฟฟ้ากลับมาแล้ว — NAS เลิกใช้แบตเตอรี่จาก UPS
+```
+
 ## Verify safely
 
-1. Confirm the DSM test message arrives in Nova first.
+1. Confirm both DSM test messages (On Battery and Power Restored) arrive in Nova first.
 2. With DSM's UPS page visible, unplug the UPS input from mains—do **not** turn
    off the UPS.
 3. Confirm DSM reports **On Battery** and Nova receives one alert.
 4. Reconnect mains.
+5. Confirm DSM reports **AC mode** and Nova receives one Power Restored alert.
 
 The expected Nova text starts with:
 
