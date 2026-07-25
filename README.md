@@ -74,6 +74,13 @@ npm run dev                 # + ngrok/cloudflared สำหรับทดสอ
 
 Webhook endpoint: `POST /api/webhook/line`
 
+## Infrastructure alert — UPS On Battery (milestone 1)
+
+Nova can receive a signed Synology DSM webhook and push a power-failure alert to
+the owner through its existing LINE channel. See
+[docs/infrastructure-ups-on-battery.md](docs/infrastructure-ups-on-battery.md)
+for architecture, environment variables, DSM setup, and the test procedure.
+
 ## Whitelist Authentication (Phase 1)
 
 1. ผู้ใช้ใหม่ทักบอท → ระบบสร้าง user record เป็น `is_active = false`

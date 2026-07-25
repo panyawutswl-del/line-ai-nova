@@ -20,6 +20,8 @@ const envSchema = z.object({
   WEATHER_LOCATION_NAME: z.string().default("สุโขทัย"),
   // AirVisual (IQAir) — air quality + weather by lat/lon. Empty when not configured.
   AIRVISUAL_API_KEY: z.string().default(""),
+  // Shared secret for machine-to-machine infrastructure alerts (e.g. Synology DSM).
+  INFRASTRUCTURE_WEBHOOK_SECRET: z.string().default(""),
 });
 
 export interface AppConfig {
@@ -53,6 +55,10 @@ export interface AppConfig {
   /** Empty string when AirVisual integration is not configured. */
   airvisual: {
     apiKey: string;
+  };
+  /** Empty when the infrastructure webhook has not been enabled. */
+  infrastructure: {
+    webhookSecret: string;
   };
 }
 
@@ -100,6 +106,9 @@ export function getConfig(): AppConfig {
     },
     airvisual: {
       apiKey: env.AIRVISUAL_API_KEY.trim(),
+    },
+    infrastructure: {
+      webhookSecret: env.INFRASTRUCTURE_WEBHOOK_SECRET.trim(),
     },
   };
   return cached;

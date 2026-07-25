@@ -31,6 +31,7 @@ import { BriefService } from "@/services/brief.service";
 import { UserService } from "@/services/user.service";
 import { ChatService } from "@/services/chat.service";
 import { WebhookService } from "@/services/webhook.service";
+import { InfrastructureAlertService } from "@/services/infrastructure-alert.service";
 import type { ToolServices } from "@/types";
 
 /**
@@ -48,6 +49,7 @@ export interface Container {
   calendarService: CalendarService;
   airvisualService: AirVisualService;
   weatherAlertService: WeatherAlertService;
+  infrastructureAlertService: InfrastructureAlertService;
 }
 
 let container: Container | null = null;
@@ -98,6 +100,10 @@ export function getContainer(): Container {
     line,
   );
   const settingsService = new SettingsService(userSettingsRepo);
+  const infrastructureAlertService = new InfrastructureAlertService(
+    line,
+    config.auth.ownerLineUserId,
+  );
 
   const toolServices: ToolServices = {
     memory: memoryService,
@@ -161,6 +167,7 @@ export function getContainer(): Container {
     calendarService,
     airvisualService,
     weatherAlertService,
+    infrastructureAlertService,
   };
   return container;
 }
