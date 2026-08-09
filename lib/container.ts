@@ -126,6 +126,7 @@ export function getContainer(): Container {
   const marketingReportService = new MarketingReportService(
     config.analytics.reportUrl,
     config.analytics.socialReportUrl,
+    config.analytics.searchQueriesReportUrl,
     config.analytics.reportSecret,
   );
 

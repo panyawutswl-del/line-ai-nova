@@ -32,4 +32,19 @@ export const marketingReportTools: NovaTool[] = [
       return { ok: true, data: result.summary ?? result.text };
     },
   },
+  {
+    declaration: {
+      name: "get_search_queries",
+      description:
+        "Get the actual Google search terms people typed to find Sriwilai Sukhothai's website (Google Search Console), with clicks, impressions, and average ranking position for each query — over a rolling ~28-day window (data has a few days' delay). Use whenever the owner asks what people search for, which keywords bring visitors, or SEO/search ranking performance. This is different from get_website_analytics, which only shows traffic sources (e.g. 'Google') without the actual search terms.",
+      parameters: { type: Type.OBJECT, properties: {} },
+    },
+    async execute(_args, ctx) {
+      const result = await ctx.services.marketingReport.fetchSearchQueries();
+      if (!result.ok) {
+        return { ok: false, message: `ดึงข้อมูลคำค้นหาไม่สำเร็จ: ${result.error}` };
+      }
+      return { ok: true, data: result.summary ?? result.text };
+    },
+  },
 ];

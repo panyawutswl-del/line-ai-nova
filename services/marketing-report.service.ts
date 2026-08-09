@@ -22,6 +22,7 @@ export class MarketingReportService {
   constructor(
     private analyticsUrl: string,
     private socialUrl: string,
+    private searchQueriesUrl: string,
     private secret: string,
   ) {}
 
@@ -55,5 +56,9 @@ export class MarketingReportService {
 
   fetchSocialReport(): Promise<MarketingReportResult> {
     return this.fetchReport(this.socialUrl);
+  }
+
+  fetchSearchQueries(): Promise<MarketingReportResult> {
+    return this.fetchReport(this.searchQueriesUrl);
   }
 }

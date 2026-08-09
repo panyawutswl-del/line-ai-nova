@@ -31,6 +31,10 @@ const envSchema = z.object({
   SOCIAL_REPORT_URL: z
     .string()
     .default("https://sriwilaisukhothai.com/api/social-report"),
+  // sriwilai-web Search Console top-queries report — same shared secret.
+  SEARCH_QUERIES_REPORT_URL: z
+    .string()
+    .default("https://sriwilaisukhothai.com/api/search-queries-report"),
 });
 
 export interface AppConfig {
@@ -73,6 +77,7 @@ export interface AppConfig {
   analytics: {
     reportUrl: string;
     socialReportUrl: string;
+    searchQueriesReportUrl: string;
     reportSecret: string;
   };
 }
@@ -128,6 +133,7 @@ export function getConfig(): AppConfig {
     analytics: {
       reportUrl: env.ANALYTICS_REPORT_URL.trim(),
       socialReportUrl: env.SOCIAL_REPORT_URL.trim(),
+      searchQueriesReportUrl: env.SEARCH_QUERIES_REPORT_URL.trim(),
       reportSecret: env.ANALYTICS_REPORT_SECRET.trim(),
     },
   };
