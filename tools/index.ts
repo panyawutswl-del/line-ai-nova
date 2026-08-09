@@ -11,6 +11,7 @@ import { weatherTools } from "@/tools/weather";
 import { airQualityTools } from "@/tools/air-quality";
 import { locationTools } from "@/tools/location";
 import { weatherAlertTools } from "@/tools/weather-alert";
+import { marketingReportTools } from "@/tools/marketing-report";
 
 const tools: NovaTool[] = [
   getCurrentDatetimeTool,
@@ -23,6 +24,7 @@ const tools: NovaTool[] = [
   ...airQualityTools,
   ...locationTools,
   ...weatherAlertTools,
+  ...marketingReportTools,
 ];
 
 const registry = new Map<string, NovaTool>(

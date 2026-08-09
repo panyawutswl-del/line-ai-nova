@@ -34,6 +34,7 @@ import { WebhookService } from "@/services/webhook.service";
 import { InfrastructureAlertService } from "@/services/infrastructure-alert.service";
 import { AnalyticsReportService } from "@/services/analytics-report.service";
 import { WeeklyMarketingReportService } from "@/services/weekly-marketing-report.service";
+import { MarketingReportService } from "@/services/marketing-report.service";
 import type { ToolServices } from "@/types";
 
 /**
@@ -122,6 +123,11 @@ export function getContainer(): Container {
     line,
     config.auth.ownerLineUserId,
   );
+  const marketingReportService = new MarketingReportService(
+    config.analytics.reportUrl,
+    config.analytics.socialReportUrl,
+    config.analytics.reportSecret,
+  );
 
   const toolServices: ToolServices = {
     memory: memoryService,
@@ -135,6 +141,7 @@ export function getContainer(): Container {
     airvisual: airvisualService,
     geocoding: geocodingService,
     weatherAlert: weatherAlertService,
+    marketingReport: marketingReportService,
   };
 
   const quickCommandService = new QuickCommandService(
