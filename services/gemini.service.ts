@@ -92,6 +92,29 @@ export class GeminiService {
   }
 
   /**
+   * One-shot text generation for non-chat contexts such as scheduled reports.
+   * No tools, no history, and a longer timeout than the webhook path — a cron
+   * (maxDuration 60) has room to wait, unlike the LINE webhook which must
+   * answer fast.
+   */
+  async generateText(params: {
+    prompt: string;
+    systemInstruction?: string;
+  }): Promise<string> {
+    const response = await this.ai.models.generateContent({
+      model: this.model,
+      contents: [{ role: "user", parts: [{ text: params.prompt }] }],
+      config: {
+        ...(params.systemInstruction
+          ? { systemInstruction: params.systemInstruction }
+          : {}),
+        abortSignal: AbortSignal.timeout(30_000),
+      },
+    });
+    return response.text?.trim() ?? "";
+  }
+
+  /**
    * Gemini is out of quota — answer a few simple intents without the model,
    * else return the friendly quota message.
    */

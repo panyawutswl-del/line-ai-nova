@@ -22,6 +22,15 @@ const envSchema = z.object({
   AIRVISUAL_API_KEY: z.string().default(""),
   // Shared secret for machine-to-machine infrastructure alerts (e.g. Synology DSM).
   INFRASTRUCTURE_WEBHOOK_SECRET: z.string().default(""),
+  // sriwilai-web GA4 report — data-only endpoint, Nova pushes it to LINE.
+  ANALYTICS_REPORT_URL: z
+    .string()
+    .default("https://sriwilaisukhothai.com/api/analytics-report"),
+  ANALYTICS_REPORT_SECRET: z.string().default(""),
+  // sriwilai-web social report (Facebook + Instagram) — same shared secret.
+  SOCIAL_REPORT_URL: z
+    .string()
+    .default("https://sriwilaisukhothai.com/api/social-report"),
 });
 
 export interface AppConfig {
@@ -59,6 +68,12 @@ export interface AppConfig {
   /** Empty when the infrastructure webhook has not been enabled. */
   infrastructure: {
     webhookSecret: string;
+  };
+  /** Empty secret when the sriwilai-web analytics report is not configured. */
+  analytics: {
+    reportUrl: string;
+    socialReportUrl: string;
+    reportSecret: string;
   };
 }
 
@@ -109,6 +124,11 @@ export function getConfig(): AppConfig {
     },
     infrastructure: {
       webhookSecret: env.INFRASTRUCTURE_WEBHOOK_SECRET.trim(),
+    },
+    analytics: {
+      reportUrl: env.ANALYTICS_REPORT_URL.trim(),
+      socialReportUrl: env.SOCIAL_REPORT_URL.trim(),
+      reportSecret: env.ANALYTICS_REPORT_SECRET.trim(),
     },
   };
   return cached;

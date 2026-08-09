@@ -32,6 +32,8 @@ import { UserService } from "@/services/user.service";
 import { ChatService } from "@/services/chat.service";
 import { WebhookService } from "@/services/webhook.service";
 import { InfrastructureAlertService } from "@/services/infrastructure-alert.service";
+import { AnalyticsReportService } from "@/services/analytics-report.service";
+import { WeeklyMarketingReportService } from "@/services/weekly-marketing-report.service";
 import type { ToolServices } from "@/types";
 
 /**
@@ -50,6 +52,8 @@ export interface Container {
   airvisualService: AirVisualService;
   weatherAlertService: WeatherAlertService;
   infrastructureAlertService: InfrastructureAlertService;
+  analyticsReportService: AnalyticsReportService;
+  weeklyMarketingReportService: WeeklyMarketingReportService;
 }
 
 let container: Container | null = null;
@@ -101,6 +105,20 @@ export function getContainer(): Container {
   );
   const settingsService = new SettingsService(userSettingsRepo);
   const infrastructureAlertService = new InfrastructureAlertService(
+    line,
+    config.auth.ownerLineUserId,
+  );
+  const analyticsReportService = new AnalyticsReportService(
+    config.analytics.reportUrl,
+    config.analytics.reportSecret,
+    line,
+    config.auth.ownerLineUserId,
+  );
+  const weeklyMarketingReportService = new WeeklyMarketingReportService(
+    config.analytics.reportUrl,
+    config.analytics.socialReportUrl,
+    config.analytics.reportSecret,
+    gemini,
     line,
     config.auth.ownerLineUserId,
   );
@@ -168,6 +186,8 @@ export function getContainer(): Container {
     airvisualService,
     weatherAlertService,
     infrastructureAlertService,
+    analyticsReportService,
+    weeklyMarketingReportService,
   };
   return container;
 }
